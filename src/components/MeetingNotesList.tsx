@@ -1,11 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, CheckCircle2, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface MeetingNotesListProps {
   searchQuery: string;
 }
 
 export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
+  const navigate = useNavigate();
+
   // Mock data - will be replaced with real data in next iteration
   const meetings = [
     {
@@ -32,6 +35,7 @@ export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
         <Card
           key={meeting.id}
           className="hover:bg-gray-50 transition-colors cursor-pointer"
+          onClick={() => navigate(`/meeting/${meeting.id}`)}
         >
           <CardHeader className="p-4">
             <CardTitle className="text-lg font-semibold">
