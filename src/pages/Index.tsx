@@ -14,7 +14,6 @@ const Index = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Will implement search functionality in next iteration
   };
 
   return (

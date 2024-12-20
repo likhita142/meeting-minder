@@ -29,37 +29,50 @@ export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
     },
   ];
 
+  // Filter meetings based on search query
+  const filteredMeetings = meetings.filter((meeting) =>
+    meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    meeting.date.includes(searchQuery) ||
+    meeting.time.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
-      {meetings.map((meeting) => (
-        <Card
-          key={meeting.id}
-          className="hover:bg-gray-50 transition-colors cursor-pointer"
-          onClick={() => navigate(`/meeting/${meeting.id}`)}
-        >
-          <CardHeader className="p-4">
-            <CardTitle className="text-lg font-semibold">
-              {meeting.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <div className="flex items-center">
-                <CalendarDays className="mr-2 h-4 w-4" />
-                {meeting.date}
+      {filteredMeetings.length === 0 ? (
+        <div className="text-center text-gray-500 py-8">
+          No meetings found matching your search.
+        </div>
+      ) : (
+        filteredMeetings.map((meeting) => (
+          <Card
+            key={meeting.id}
+            className="hover:bg-gray-50 transition-colors cursor-pointer"
+            onClick={() => navigate(`/meeting/${meeting.id}`)}
+          >
+            <CardHeader className="p-4">
+              <CardTitle className="text-lg font-semibold">
+                {meeting.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                <div className="flex items-center">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {meeting.date}
+                </div>
+                <div className="flex items-center">
+                  <Clock className="mr-2 h-4 w-4" />
+                  {meeting.time}
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  {meeting.completedItems}/{meeting.actionItems} action items
+                </div>
               </div>
-              <div className="flex items-center">
-                <Clock className="mr-2 h-4 w-4" />
-                {meeting.time}
-              </div>
-              <div className="flex items-center">
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                {meeting.completedItems}/{meeting.actionItems} action items
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 }
