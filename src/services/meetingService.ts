@@ -76,14 +76,32 @@ export const meetingService = {
     date: string;
     description?: string;
   }): Promise<MeetingWithActions> {
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User must be logged in to create a meeting");
+    }
+
     const { data, error } = await supabase
       .from("meetings")
-      .insert([meeting])
+      .insert([{
+        ...meeting,
+        created_by: user.id, // Add the user ID as created_by
+      }])
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) {
+      console.error("Error creating meeting:", error);
+      throw error;
+    }
+    
+    return {
+      ...data,
+      actionItemsCount: 0,
+      completedItemsCount: 0,
+    };
   },
 };
 
