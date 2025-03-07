@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useCreateMeeting } from "@/services/meetingService";
+import { toast } from "sonner";
 
 interface CreateMeetingDialogProps {
   open: boolean;
@@ -25,17 +28,45 @@ export function CreateMeetingDialog({
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [agenda, setAgenda] = useState("");
-  const { toast } = useToast();
+  const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const createMeetingMutation = useCreateMeeting();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Will implement creation logic in next iteration
-    toast({
-      title: "Meeting created",
-      description: "Your meeting has been successfully created.",
-    });
-    onOpenChange(false);
+    
+    if (!title || !date || !time) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Combine date and time for the database
+      const dateTime = `${date}T${time}:00`;
+      
+      await createMeetingMutation.mutateAsync({
+        title,
+        date: dateTime,
+        description: description || undefined,
+      });
+
+      toast.success("Meeting created successfully");
+      onOpenChange(false);
+      
+      // Reset form
+      setTitle("");
+      setDate("");
+      setTime("");
+      setDescription("");
+    } catch (error) {
+      toast.error("Failed to create meeting");
+      console.error("Error creating meeting:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,6 +87,7 @@ export function CreateMeetingDialog({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter meeting title"
+                required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -66,6 +98,7 @@ export function CreateMeetingDialog({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  required
                 />
               </div>
               <div className="grid gap-2">
@@ -75,21 +108,24 @@ export function CreateMeetingDialog({
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
+                  required
                 />
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="agenda">Agenda</Label>
+              <Label htmlFor="description">Agenda</Label>
               <Textarea
-                id="agenda"
-                value={agenda}
-                onChange={(e) => setAgenda(e.target.value)}
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter meeting agenda..."
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Create Meeting</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Meeting"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
