@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -50,8 +51,9 @@ export function ActionItemsTable({ items, filterStatus }: ActionItemsTableProps)
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Title</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Owner</TableHead>
+            <TableHead>Assigned To</TableHead>
             <TableHead>Deadline</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
@@ -60,16 +62,19 @@ export function ActionItemsTable({ items, filterStatus }: ActionItemsTableProps)
         <TableBody>
           {filteredItems.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-muted-foreground">
                 No action items found
               </TableCell>
             </TableRow>
           ) : (
             filteredItems.map((item) => (
               <TableRow key={item.id}>
+                <TableCell>{item.title}</TableCell>
                 <TableCell>{item.description}</TableCell>
-                <TableCell>{item.owner}</TableCell>
-                <TableCell>{format(new Date(item.deadline), "PPP")}</TableCell>
+                <TableCell>{item.assigned_to}</TableCell>
+                <TableCell>
+                  {item.due_date ? format(new Date(item.due_date), "PPP") : "-"}
+                </TableCell>
                 <TableCell>
                   <Select
                     value={item.status}
