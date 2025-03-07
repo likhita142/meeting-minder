@@ -3,11 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface ActionItem {
   id: string;
-  description: string;
-  owner: string;
-  deadline: Date;
+  title: string;
+  description: string | null;
+  assigned_to: string | null;
+  due_date: string | null;
   status: 'pending' | 'in-progress' | 'completed';
-  created_at: Date;
+  meeting_id: string | null;
+  created_at: string | null;
+  created_by: string | null;
 }
 
 export const actionItemService = {
@@ -21,10 +24,20 @@ export const actionItemService = {
     return data as ActionItem[];
   },
 
-  async createActionItem(item: Omit<ActionItem, 'id' | 'created_at'>) {
+  async createActionItem(item: { 
+    title: string;
+    description?: string;
+    assigned_to?: string;
+    due_date?: string;
+    meeting_id?: string;
+    status?: ActionItem['status']; 
+  }) {
     const { data, error } = await supabase
       .from('action_items')
-      .insert([{ ...item }])
+      .insert([{ 
+        ...item,
+        status: item.status || 'pending'
+      }])
       .select()
       .single();
 

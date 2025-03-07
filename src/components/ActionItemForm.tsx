@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +12,14 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { ActionItem, actionItemService } from "@/services/actionItemService";
+import { actionItemService } from "@/services/actionItemService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function ActionItemForm() {
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [owner, setOwner] = useState("");
-  const [deadline, setDeadline] = useState<Date>();
+  const [assignedTo, setAssignedTo] = useState("");
+  const [dueDate, setDueDate] = useState<Date>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -29,14 +31,15 @@ export function ActionItemForm() {
         title: "Action Item Added",
         description: "The action item has been created successfully.",
       });
+      setTitle("");
       setDescription("");
-      setOwner("");
-      setDeadline(undefined);
+      setAssignedTo("");
+      setDueDate(undefined);
     },
   });
 
   const handleAddActionItem = () => {
-    if (!description || !owner || !deadline) {
+    if (!title || !assignedTo || !dueDate) {
       toast({
         title: "Missing Fields",
         description: "Please fill in all required fields",
@@ -46,9 +49,10 @@ export function ActionItemForm() {
     }
 
     createActionItem({
-      description,
-      owner,
-      deadline,
+      title,
+      description: description || undefined,
+      assigned_to: assignedTo,
+      due_date: dueDate.toISOString(),
       status: "pending",
     });
   };
@@ -56,14 +60,19 @@ export function ActionItemForm() {
   return (
     <div className="grid gap-4 md:grid-cols-4">
       <Input
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <Input
         placeholder="Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <Input
-        placeholder="Owner"
-        value={owner}
-        onChange={(e) => setOwner(e.target.value)}
+        placeholder="Assigned to"
+        value={assignedTo}
+        onChange={(e) => setAssignedTo(e.target.value)}
       />
       <Popover>
         <PopoverTrigger asChild>
@@ -71,23 +80,23 @@ export function ActionItemForm() {
             variant="outline"
             className={cn(
               "justify-start text-left font-normal",
-              !deadline && "text-muted-foreground"
+              !dueDate && "text-muted-foreground"
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {deadline ? format(deadline, "PPP") : <span>Pick a deadline</span>}
+            {dueDate ? format(dueDate, "PPP") : <span>Pick a deadline</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <Calendar
             mode="single"
-            selected={deadline}
-            onSelect={setDeadline}
+            selected={dueDate}
+            onSelect={setDueDate}
             initialFocus
           />
         </PopoverContent>
       </Popover>
-      <Button onClick={handleAddActionItem}>
+      <Button onClick={handleAddActionItem} className="md:col-span-4">
         <Plus className="mr-2 h-4 w-4" />
         Add Action Item
       </Button>
