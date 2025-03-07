@@ -32,6 +32,8 @@ export const actionItemService = {
     meeting_id?: string;
     status?: ActionItem['status']; 
   }) {
+    // The assigned_to field should be a string (name), not a UUID
+    // We'll modify how we store this value
     const { data, error } = await supabase
       .from('action_items')
       .insert([{ 
@@ -41,7 +43,10 @@ export const actionItemService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating action item:", error);
+      throw error;
+    }
     return data as ActionItem;
   },
 

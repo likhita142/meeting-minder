@@ -23,7 +23,7 @@ export function ActionItemForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { mutate: createActionItem } = useMutation({
+  const { mutate: createActionItem, isError, error } = useMutation({
     mutationFn: actionItemService.createActionItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actionItems'] });
@@ -36,6 +36,14 @@ export function ActionItemForm() {
       setAssignedTo("");
       setDueDate(undefined);
     },
+    onError: (error) => {
+      console.error("Error adding action item:", error);
+      toast({
+        title: "Failed to Add Action Item",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    }
   });
 
   const handleAddActionItem = () => {
@@ -51,7 +59,7 @@ export function ActionItemForm() {
     createActionItem({
       title,
       description: description || undefined,
-      assigned_to: assignedTo,
+      assigned_to: assignedTo, // Store as a string (name)
       due_date: dueDate.toISOString(),
       status: "pending",
     });
