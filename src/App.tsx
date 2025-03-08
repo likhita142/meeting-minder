@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import { MeetingDetails } from "./components/MeetingDetails";
-import { ThemeToggle } from "./components/ThemeToggle";
 import { LogoutButton } from "./components/LogoutButton";
 
 const queryClient = new QueryClient();
@@ -41,7 +39,6 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="container mx-auto py-3 px-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">Meeting Minder</h1>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <LogoutButton variant="outline" />
           </div>
         </div>
