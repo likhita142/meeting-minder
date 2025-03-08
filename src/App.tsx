@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import { MeetingDetails } from "./components/MeetingDetails";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { LogoutButton } from "./components/LogoutButton";
 
 const queryClient = new QueryClient();
 
@@ -32,10 +34,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border">
+        <div className="container mx-auto py-3 px-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold">Meeting Minder</h1>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <LogoutButton variant="outline" />
+          </div>
+        </div>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <ThemeToggle />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -45,7 +63,9 @@ const App = () => (
             path="/"
             element={
               <ProtectedRoute>
-                <Index />
+                <AuthenticatedLayout>
+                  <Index />
+                </AuthenticatedLayout>
               </ProtectedRoute>
             }
           />
@@ -53,7 +73,9 @@ const App = () => (
             path="/meeting/:id"
             element={
               <ProtectedRoute>
-                <MeetingDetails />
+                <AuthenticatedLayout>
+                  <MeetingDetails />
+                </AuthenticatedLayout>
               </ProtectedRoute>
             }
           />
