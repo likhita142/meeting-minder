@@ -49,7 +49,7 @@ export function ActionItemForm() {
   });
 
   const handleAddActionItem = () => {
-    if (!title) {
+    if (!title.trim()) {
       toast({
         title: "Missing Title",
         description: "Please enter a title for the action item",
@@ -60,9 +60,9 @@ export function ActionItemForm() {
 
     // Make assignedTo and dueDate optional
     createActionItem({
-      title,
-      description: description || undefined,
-      assigned_to: assignedTo || undefined, 
+      title: title.trim(),
+      description: description.trim() || undefined, 
+      assigned_to: assignedTo.trim() || undefined,
       due_date: dueDate ? dueDate.toISOString() : undefined,
       status: "pending",
     });
@@ -78,7 +78,7 @@ export function ActionItemForm() {
           className="md:col-span-2"
         />
         <Input
-          placeholder="Assigned to"
+          placeholder="Assigned to (name)"
           value={assignedTo}
           onChange={(e) => setAssignedTo(e.target.value)}
         />
@@ -119,7 +119,7 @@ export function ActionItemForm() {
         disabled={isPending}
       >
         <Plus className="mr-2 h-4 w-4" />
-        Add Action Item
+        {isPending ? "Adding..." : "Add Action Item"}
       </Button>
     </div>
   );

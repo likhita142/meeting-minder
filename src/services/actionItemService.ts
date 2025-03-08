@@ -38,11 +38,16 @@ export const actionItemService = {
       status: item.status || 'pending'
     };
     
-    // Only add optional fields if they are provided
+    // Only add optional fields if they are provided and not empty
     if (item.description) payload.description = item.description;
-    if (item.assigned_to) payload.assigned_to = item.assigned_to;
     if (item.due_date) payload.due_date = item.due_date;
     if (item.meeting_id) payload.meeting_id = item.meeting_id;
+    
+    // Handle assigned_to as a text description rather than a UUID
+    // This means we store the person's name, not their user ID
+    if (item.assigned_to && item.assigned_to.trim() !== '') {
+      payload.assigned_to = item.assigned_to;
+    }
     
     const { data, error } = await supabase
       .from('action_items')
