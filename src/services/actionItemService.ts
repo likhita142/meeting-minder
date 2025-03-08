@@ -32,14 +32,21 @@ export const actionItemService = {
     meeting_id?: string;
     status?: ActionItem['status']; 
   }) {
-    // The assigned_to field should be a string (name), not a UUID
-    // We'll modify how we store this value
+    // Only including defined fields to avoid null/undefined issues
+    const payload: any = { 
+      title: item.title,
+      status: item.status || 'pending'
+    };
+    
+    // Only add optional fields if they are provided
+    if (item.description) payload.description = item.description;
+    if (item.assigned_to) payload.assigned_to = item.assigned_to;
+    if (item.due_date) payload.due_date = item.due_date;
+    if (item.meeting_id) payload.meeting_id = item.meeting_id;
+    
     const { data, error } = await supabase
       .from('action_items')
-      .insert([{ 
-        ...item,
-        status: item.status || 'pending'
-      }])
+      .insert([payload])
       .select()
       .single();
 
@@ -47,6 +54,7 @@ export const actionItemService = {
       console.error("Error creating action item:", error);
       throw error;
     }
+    
     return data as ActionItem;
   },
 

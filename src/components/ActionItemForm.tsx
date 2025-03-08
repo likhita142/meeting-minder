@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,7 +24,7 @@ export function ActionItemForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { mutate: createActionItem, isError, error } = useMutation({
+  const { mutate: createActionItem, isPending } = useMutation({
     mutationFn: actionItemService.createActionItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actionItems'] });
@@ -31,6 +32,7 @@ export function ActionItemForm() {
         title: "Action Item Added",
         description: "The action item has been created successfully.",
       });
+      // Reset form
       setTitle("");
       setDescription("");
       setAssignedTo("");
@@ -47,64 +49,75 @@ export function ActionItemForm() {
   });
 
   const handleAddActionItem = () => {
-    if (!title || !assignedTo || !dueDate) {
+    if (!title) {
       toast({
-        title: "Missing Fields",
-        description: "Please fill in all required fields",
+        title: "Missing Title",
+        description: "Please enter a title for the action item",
         variant: "destructive",
       });
       return;
     }
 
+    // Make assignedTo and dueDate optional
     createActionItem({
       title,
       description: description || undefined,
-      assigned_to: assignedTo, // Store as a string (name)
-      due_date: dueDate.toISOString(),
+      assigned_to: assignedTo || undefined, 
+      due_date: dueDate ? dueDate.toISOString() : undefined,
       status: "pending",
     });
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
-      <Input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <Input
-        placeholder="Description"
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-4">
+        <Input
+          placeholder="Title *"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="md:col-span-2"
+        />
+        <Input
+          placeholder="Assigned to"
+          value={assignedTo}
+          onChange={(e) => setAssignedTo(e.target.value)}
+        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "justify-start text-left font-normal",
+                !dueDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dueDate ? format(dueDate, "PPP") : <span>Pick a deadline</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dueDate}
+              onSelect={setDueDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      
+      <Textarea
+        placeholder="Description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
+        className="min-h-[80px]"
       />
-      <Input
-        placeholder="Assigned to"
-        value={assignedTo}
-        onChange={(e) => setAssignedTo(e.target.value)}
-      />
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "justify-start text-left font-normal",
-              !dueDate && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dueDate ? format(dueDate, "PPP") : <span>Pick a deadline</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={dueDate}
-            onSelect={setDueDate}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-      <Button onClick={handleAddActionItem} className="md:col-span-4">
+      
+      <Button 
+        onClick={handleAddActionItem} 
+        className="w-full"
+        disabled={isPending}
+      >
         <Plus className="mr-2 h-4 w-4" />
         Add Action Item
       </Button>
