@@ -16,7 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import { actionItemService } from "@/services/actionItemService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export function ActionItemForm() {
+interface ActionItemFormProps {
+  onSubmit?: (item: any) => void;
+}
+
+export function ActionItemForm({ onSubmit }: ActionItemFormProps = {}) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
@@ -58,14 +62,26 @@ export function ActionItemForm() {
       return;
     }
 
-    // Make assignedTo and dueDate optional
-    createActionItem({
+    const item = {
       title: title.trim(),
       description: description.trim() || undefined, 
       assigned_to: assignedTo.trim() || undefined,
       due_date: dueDate ? dueDate.toISOString() : undefined,
-      status: "pending",
-    });
+      status: "pending" as const,
+    };
+
+    // If onSubmit prop is provided, use that instead of the default behavior
+    if (onSubmit) {
+      onSubmit(item);
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setAssignedTo("");
+      setDueDate(undefined);
+    } else {
+      // Use the default mutation
+      createActionItem(item);
+    }
   };
 
   return (

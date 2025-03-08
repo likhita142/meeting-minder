@@ -24,6 +24,17 @@ export const actionItemService = {
     return data as ActionItem[];
   },
 
+  async getActionItemsByMeeting(meetingId: string) {
+    const { data, error } = await supabase
+      .from('action_items')
+      .select('*')
+      .eq('meeting_id', meetingId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as ActionItem[];
+  },
+
   async createActionItem(item: { 
     title: string;
     description?: string;
