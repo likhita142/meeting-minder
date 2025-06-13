@@ -18,20 +18,34 @@ import {
 import { format } from "date-fns";
 import { ActionItem, actionItemService } from "@/services/actionItemService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { SearchFilters } from "./SearchAndFilter";
+import { parseISO, isAfter, isBefore } from "date-fns";
 
 interface ActionItemsTableProps {
   items: ActionItem[];
-  filterStatus: string;
+  filters: SearchFilters;
 }
 
-export function ActionItemsTable({ items, filterStatus }: ActionItemsTableProps) {
+export function ActionItemsTable({ items, filters }: ActionItemsTableProps) {
   const queryClient = useQueryClient();
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    item: ActionItem | null;
+  }>({ open: false, item: null });
 
   const { mutate: updateStatus } = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ActionItem['status'] }) =>
       actionItemService.updateActionItemStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actionItems'] });
+      toast.success('Action item status updated');
+    },
+    onError: () => {
+      toast.error('Failed to update action item status');
     },
   });
 
@@ -39,12 +53,46 @@ export function ActionItemsTable({ items, filterStatus }: ActionItemsTableProps)
     mutationFn: actionItemService.deleteActionItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actionItems'] });
+      toast.success('Action item deleted');
+    },
+    onError: () => {
+      toast.error('Failed to delete action item');
     },
   });
 
-  const filteredItems = items.filter((item) =>
-    filterStatus === "all" ? true : item.status === filterStatus
-  );
+  const handleDeleteClick = (item: ActionItem) => {
+    setDeleteConfirm({ open: true, item });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirm.item) {
+      deleteItem(deleteConfirm.item.id);
+    }
+  };
+
+  const filteredItems = items.filter((item) => {
+    // Text search
+    const matchesQuery = !filters.query ||
+      item.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+      (item.description && item.description.toLowerCase().includes(filters.query.toLowerCase())) ||
+      (item.assigned_to && item.assigned_to.toLowerCase().includes(filters.query.toLowerCase()));
+
+    // Status filter
+    const matchesStatus = filters.status === "all" || item.status === filters.status;
+
+    // Date range filter (for due dates)
+    let matchesDateRange = true;
+    if (item.due_date && (filters.dateFrom || filters.dateTo)) {
+      const dueDate = parseISO(item.due_date);
+      const matchesDateFrom = !filters.dateFrom || isAfter(dueDate, filters.dateFrom) ||
+        dueDate.toDateString() === filters.dateFrom.toDateString();
+      const matchesDateTo = !filters.dateTo || isBefore(dueDate, filters.dateTo) ||
+        dueDate.toDateString() === filters.dateTo.toDateString();
+      matchesDateRange = matchesDateFrom && matchesDateTo;
+    }
+
+    return matchesQuery && matchesStatus && matchesDateRange;
+  });
 
   return (
     <div className="rounded-md border">
@@ -96,9 +144,10 @@ export function ActionItemsTable({ items, filterStatus }: ActionItemsTableProps)
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteItem(item.id)}
+                    onClick={() => handleDeleteClick(item)}
+                    className="text-destructive hover:text-destructive"
                   >
-                    Delete
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -106,6 +155,16 @@ export function ActionItemsTable({ items, filterStatus }: ActionItemsTableProps)
           )}
         </TableBody>
       </Table>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, item: null })}
+        title="Delete Action Item"
+        description={`Are you sure you want to delete "${deleteConfirm.item?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={handleDeleteConfirm}
+        variant="destructive"
+      />
     </div>
   );
 }

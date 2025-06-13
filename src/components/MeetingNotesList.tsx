@@ -3,28 +3,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, CheckCircle2, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMeetings } from "@/services/meetingService";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isAfter, isBefore } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SearchFilters } from "./SearchAndFilter";
 
 interface MeetingNotesListProps {
-  searchQuery: string;
+  filters: SearchFilters;
 }
 
-export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
+export function MeetingNotesList({ filters }: MeetingNotesListProps) {
   const navigate = useNavigate();
   const { data: meetings, isLoading, error } = useMeetings();
 
-  // Filter meetings based on search query
-  const filteredMeetings = meetings?.filter((meeting) =>
-    meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (meeting.date && meeting.date.toString().includes(searchQuery))
-  ) || [];
+  // Filter meetings based on filters
+  const filteredMeetings = meetings?.filter((meeting) => {
+    // Text search
+    const matchesQuery = !filters.query ||
+      meeting.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+      (meeting.description && meeting.description.toLowerCase().includes(filters.query.toLowerCase())) ||
+      meeting.date.toString().includes(filters.query);
+
+    // Date range filter
+    const meetingDate = parseISO(meeting.date);
+    const matchesDateFrom = !filters.dateFrom || isAfter(meetingDate, filters.dateFrom) ||
+      meetingDate.toDateString() === filters.dateFrom.toDateString();
+    const matchesDateTo = !filters.dateTo || isBefore(meetingDate, filters.dateTo) ||
+      meetingDate.toDateString() === filters.dateTo.toDateString();
+
+    return matchesQuery && matchesDateFrom && matchesDateTo;
+  }) || [];
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="bg-gray-50">
+          <Card key={i}>
             <CardHeader className="p-4">
               <Skeleton className="h-6 w-3/4" />
             </CardHeader>
@@ -43,7 +56,7 @@ export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
 
   if (error) {
     return (
-      <div className="text-center text-red-500 py-8">
+      <div className="text-center text-destructive py-8">
         Error loading meetings. Please try again.
       </div>
     );
@@ -52,14 +65,14 @@ export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
   return (
     <div className="space-y-4">
       {filteredMeetings.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
-          {searchQuery ? "No meetings found matching your search." : "No meetings yet. Create your first meeting!"}
+        <div className="text-center text-muted-foreground py-8">
+          {filters.query || filters.dateFrom || filters.dateTo ? "No meetings found matching your filters." : "No meetings yet. Create your first meeting!"}
         </div>
       ) : (
         filteredMeetings.map((meeting) => (
           <Card
             key={meeting.id}
-            className="hover:bg-gray-50 transition-colors cursor-pointer"
+            className="hover:bg-accent transition-colors cursor-pointer"
             onClick={() => navigate(`/meeting/${meeting.id}`)}
           >
             <CardHeader className="p-4">
@@ -68,7 +81,7 @@ export function MeetingNotesList({ searchQuery }: MeetingNotesListProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
+              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <CalendarDays className="mr-2 h-4 w-4" />
                   {format(parseISO(meeting.date), "yyyy-MM-dd")}

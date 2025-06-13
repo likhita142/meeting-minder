@@ -1,8 +1,8 @@
-# Welcome to your Lovable project
+# Meeting Minder 📝
 
-## Project info
+A comprehensive meeting management application that helps teams organize meetings, track action items, and maintain productivity. Built with modern web technologies for a seamless user experience.
 
-**URL**: https://lovable.dev/projects/b8ca4928-a939-48c4-be70-db478abdba54
+**Project URL**: https://lovable.dev/projects/b8ca4928-a939-48c4-be70-db478abdba54
 
 ## How can I edit this code?
 

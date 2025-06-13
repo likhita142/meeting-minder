@@ -16,27 +16,49 @@ export const meetingService = {
       .select("*")
       .order("date", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching meetings:', error);
+      throw new Error(`Failed to fetch meetings: ${error.message}`);
+    }
+
+    if (!meetings) return [];
 
     // Get action items counts for each meeting
     const meetingsWithActions = await Promise.all(
       meetings.map(async (meeting) => {
-        const { count: actionItemsCount } = await supabase
-          .from("action_items")
-          .select("*", { count: "exact", head: true })
-          .eq("meeting_id", meeting.id);
+        try {
+          const { count: actionItemsCount, error: actionError } = await supabase
+            .from("action_items")
+            .select("*", { count: "exact", head: true })
+            .eq("meeting_id", meeting.id);
 
-        const { count: completedItemsCount } = await supabase
-          .from("action_items")
-          .select("*", { count: "exact", head: true })
-          .eq("meeting_id", meeting.id)
-          .eq("status", "completed");
+          if (actionError) {
+            console.warn('Error fetching action items count:', actionError);
+          }
 
-        return {
-          ...meeting,
-          actionItemsCount: actionItemsCount || 0,
-          completedItemsCount: completedItemsCount || 0,
-        };
+          const { count: completedItemsCount, error: completedError } = await supabase
+            .from("action_items")
+            .select("*", { count: "exact", head: true })
+            .eq("meeting_id", meeting.id)
+            .eq("status", "completed");
+
+          if (completedError) {
+            console.warn('Error fetching completed items count:', completedError);
+          }
+
+          return {
+            ...meeting,
+            actionItemsCount: actionItemsCount || 0,
+            completedItemsCount: completedItemsCount || 0,
+          };
+        } catch (error) {
+          console.warn('Error processing meeting:', meeting.id, error);
+          return {
+            ...meeting,
+            actionItemsCount: 0,
+            completedItemsCount: 0,
+          };
+        }
       })
     );
 
@@ -44,13 +66,23 @@ export const meetingService = {
   },
 
   async getMeetingById(id: string): Promise<MeetingWithActions | null> {
+    if (!id) {
+      throw new Error('Meeting ID is required');
+    }
+
     const { data, error } = await supabase
       .from("meetings")
       .select("*")
       .eq("id", id)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching meeting:', error);
+      if (error.code === 'PGRST116') {
+        return null; // Meeting not found
+      }
+      throw new Error(`Failed to fetch meeting: ${error.message}`);
+    }
     
     // Get action items count
     const { count: actionItemsCount } = await supabase

@@ -15,13 +15,22 @@ export interface ActionItem {
 
 export const actionItemService = {
   async getActionItems() {
-    const { data, error } = await supabase
-      .from('action_items')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('action_items')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data as ActionItem[];
+      if (error) {
+        console.error('Error fetching action items:', error);
+        throw new Error(`Failed to fetch action items: ${error.message}`);
+      }
+
+      return (data as ActionItem[]) || [];
+    } catch (error) {
+      console.error('Action items service error:', error);
+      throw error;
+    }
   },
 
   async getActionItemsByMeeting(meetingId: string) {
@@ -35,31 +44,39 @@ export const actionItemService = {
     return data as ActionItem[];
   },
 
-  async createActionItem(item: { 
+  async createActionItem(item: {
     title: string;
     description?: string;
     assigned_to?: string;
     due_date?: string;
     meeting_id?: string;
-    status?: ActionItem['status']; 
+    status?: ActionItem['status'];
   }) {
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("User must be logged in to create action items");
+    }
+
     // Only including defined fields to avoid null/undefined issues
-    const payload: any = { 
+    const payload: any = {
       title: item.title,
-      status: item.status || 'pending'
+      status: item.status || 'pending',
+      created_by: user.id // Add the user ID as created_by
     };
-    
+
     // Only add optional fields if they are provided and not empty
     if (item.description) payload.description = item.description;
     if (item.due_date) payload.due_date = item.due_date;
     if (item.meeting_id) payload.meeting_id = item.meeting_id;
-    
+
     // Handle assigned_to as a text description rather than a UUID
     // This means we store the person's name, not their user ID
     if (item.assigned_to && item.assigned_to.trim() !== '') {
       payload.assigned_to = item.assigned_to;
     }
-    
+
     const { data, error } = await supabase
       .from('action_items')
       .insert([payload])
@@ -70,7 +87,7 @@ export const actionItemService = {
       console.error("Error creating action item:", error);
       throw error;
     }
-    
+
     return data as ActionItem;
   },
 

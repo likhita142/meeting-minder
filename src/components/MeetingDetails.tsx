@@ -1,7 +1,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CalendarDays, Clock, CheckSquare, User, Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowLeft, CalendarDays, Clock, CheckSquare, User, Plus, Download } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useMeeting } from "@/services/meetingService";
 import { format, parseISO } from "date-fns";
@@ -10,6 +16,8 @@ import { ActionItem, actionItemService } from "@/services/actionItemService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ActionItemForm } from "./ActionItemForm";
 import { useState } from "react";
+import { toast } from "sonner";
+import { exportMeetingReport } from "@/utils/exportUtils";
 
 export function MeetingDetails() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +44,10 @@ export function MeetingDetails() {
       actionItemService.updateActionItemStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actionItems', id] });
+      toast.success('Action item status updated');
+    },
+    onError: () => {
+      toast.error('Failed to update action item status');
     },
   });
 
@@ -93,15 +105,25 @@ export function MeetingDetails() {
     );
   }
 
-  const handleAddActionItem = (item: any) => {
-    if (id) {
+  const handleAddActionItem = async (item: any) => {
+    if (!id) return;
+
+    try {
       const newItem = { ...item, meeting_id: id };
-      actionItemService.createActionItem(newItem)
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['actionItems', id] });
-          setShowAddForm(false);
-        })
-        .catch(err => console.error("Error adding action item:", err));
+      await actionItemService.createActionItem(newItem);
+      queryClient.invalidateQueries({ queryKey: ['actionItems', id] });
+      setShowAddForm(false);
+      toast.success('Action item added successfully');
+    } catch (error) {
+      console.error("Error adding action item:", error);
+      toast.error('Failed to add action item');
+    }
+  };
+
+  const handleExportReport = () => {
+    if (meeting) {
+      exportMeetingReport(meeting, actionItems);
+      toast.success('Meeting report exported successfully');
     }
   };
 
@@ -118,7 +140,22 @@ export function MeetingDetails() {
 
       <Card className="bg-white shadow-lg">
         <CardHeader className="p-6">
-          <CardTitle className="text-2xl font-bold">{meeting.title}</CardTitle>
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-2xl font-bold">{meeting.title}</CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportReport}>
+                  Export Meeting Report
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <div className="flex items-center space-x-4 text-sm text-gray-500 mt-2">
             <div className="flex items-center">
               <CalendarDays className="mr-2 h-4 w-4" />
@@ -191,19 +228,19 @@ export function MeetingDetails() {
                   </div>
                   <div className="flex-1">
                     <p className={`text-sm font-medium ${
-                      item.status === 'completed' ? 'line-through text-gray-500' : ''
+                      item.status === 'completed' ? 'line-through text-muted-foreground' : ''
                     }`}>{item.title}</p>
                     {item.description && (
-                      <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                     )}
                     {item.assigned_to && (
-                      <div className="flex items-center mt-1 text-xs text-gray-500">
+                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
                         <User className="h-3 w-3 mr-1" />
                         {item.assigned_to}
                       </div>
                     )}
                     {item.due_date && (
-                      <div className="flex items-center mt-1 text-xs text-gray-500">
+                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
                         <CalendarDays className="h-3 w-3 mr-1" />
                         {format(new Date(item.due_date), "PPP")}
                       </div>
@@ -213,7 +250,7 @@ export function MeetingDetails() {
               ))}
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-4">
+            <div className="text-center text-muted-foreground py-4">
               No action items for this meeting yet.
             </div>
           )}
